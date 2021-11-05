@@ -234,7 +234,7 @@ def main():
                 if (not paused) or read_next:
                     read_next = False
                 frame_visu = cv2.resize(frame.copy(), video_res)
-
+                nr_time = nr / fps
                 if show_info:
                     draw_time(frame_visu, nr, fps, paused)
                     draw_bar(frame_visu, nr, frames, fps, stamps)
@@ -242,7 +242,7 @@ def main():
 
                 cv2.imshow("tsmark", frame_visu)
                 k = cv2.waitKey(draw_wait)
-                if k & 0xFF == ord("q"):
+                if k & 0xFF == ord("q") or k & 0xFF == 27:
                     break
                 if k & 0xFF == 32:  # space
                     paused = not paused
@@ -258,7 +258,7 @@ def main():
                     last_move.append(("r", time.time()))
                     if auto_step:
                         step, last_move = calculate_step(step, last_move, video_length)
-                    nr += int(fps * step) - 1
+                    nr = int((nr_time + step) * fps) - 1
                     read_next = True
                 if k & 0xFF == ord("."):
                     paused = True
@@ -267,7 +267,7 @@ def main():
                     last_move.append(("l", time.time()))
                     if auto_step:
                         step, last_move = calculate_step(step, last_move, video_length)
-                    nr -= int(fps * step) + 1
+                    nr = int((nr_time - step) * fps) - 1
                     read_next = True
                 if k & 0xFF == ord(","):
                     paused = True
