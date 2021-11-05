@@ -8,7 +8,7 @@ example:  `tsmark video.mp4 --ts 10,00:01:23.4`
 - Opens video named `video.mp4`
 - Sets predefined timestamps at 10 seconds, and 1 minute 23.4 seconds.
 
-Keyboard shortcuts:
+## Keyboard shortcuts:
 
 ```
 Arrows left and right, Home, End
@@ -21,3 +21,7 @@ i         toggle HUD
 q         quit
 ```
 
+
+## Install
+
+`pipx install git+https://github.com/moonq/tsmark.git`
