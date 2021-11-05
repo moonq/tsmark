@@ -276,14 +276,14 @@ def main():
 
                 if k & 0xFF == ord("z"):  # move to previous ts
                     for ts in reversed(sorted(stamps)):
-                        if ts < nr-1:
-                            nr = ts-1
+                        if ts < nr - 1:
+                            nr = ts - 1
                             read_next = True
                             break
                 if k & 0xFF == ord("c"):  # move to previous ts
                     for ts in sorted(stamps):
                         if ts > nr:
-                            nr = ts-1
+                            nr = ts - 1
                             read_next = True
                             break
 
