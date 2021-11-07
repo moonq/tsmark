@@ -14,10 +14,12 @@ class Marker:
         self.paused = False
         self.read_next = False
         self.show_info = True
+        self.show_help = False
         self.auto_step = True
         self.font = cv2.FONT_HERSHEY_SIMPLEX
         self.frame_visu = []
         self.max_res = (1280, 720)
+        self.min_res = (512, None)
 
         try:
             self.open()
@@ -52,6 +54,11 @@ class Marker:
         if self.video_res[1] > self.max_res[1]:
             self.video_res[1] = int(self.max_res[1])
             self.video_res[0] = int(self.video_res[1] * video_aspect)
+
+        if self.video_res[0] < self.min_res[0]:
+            self.video_res[0] = int(self.min_res[0])
+            self.video_res[1] = int(self.video_res[0] / video_aspect)
+
         self.video_res = tuple(self.video_res)
         self.bar_start = int(self.video_res[0] * 0.05)
         self.bar_end = int(self.video_res[0] * 0.95)
@@ -142,6 +149,15 @@ class Marker:
             (255, 255, 255),
         )
 
+    def draw_help(self, frame):
+
+        bottom = 80
+        left = 100
+        for row in self.get_help().split("\n"):
+            self.shadow_text(frame, row, (left, bottom), 0.6, 1, (255, 255, 255))
+            bottom += 18
+
+
     def draw_label(self, frame):
 
         if not self.nr in self.stamps:
@@ -168,6 +184,22 @@ class Marker:
         frame = nframe % self.fps
         parts = int(100 * (frame / self.fps))
         return time.strftime("%H:%M:%S", time.gmtime(seconds)) + ".%02d" % (parts)
+
+    def get_help(self):
+        return """Keyboard help:
+    (Note: after mouse click, arrows stop working due to unknown bug: use j,k)
+    Arrows left and right, Home, End or click mouse in position bar
+    j and k
+              jump in video. Tap frequently to increase time step
+    , and .   move one frame at a time
+    z and c   move to previous or next mark
+    x or double click in the video
+              mark frame
+    space     pause
+    i         toggle HUD
+    q         quit
+    """
+
 
     def get_options(self):
 
@@ -234,21 +266,7 @@ class Marker:
             self.nr = 0
 
     def print_help(self):
-        print(
-            """Keyboard help:
-    (Note: after mouse click, arrows stop working due to unknown bug: use j,k)
-    Arrows left and right, Home, End or click mouse in position bar
-    j and k
-              jump in video. Tap frequently to increase time step
-    , and .   move one frame at a time
-    z and c   move to previous or next mark
-    x or double click in the video
-              mark frame
-    space     pause
-    i         toggle HUD
-    q         quit
-    """
-        )
+        print(self.get_help())
 
     def print_timestamps(self):
         self.stamps.sort()
@@ -320,6 +338,8 @@ class Marker:
                     self.draw_time(frame_visu)
                     self.draw_bar(frame_visu)
                     self.draw_label(frame_visu)
+                if self.show_help:
+                    self.draw_help(frame_visu)
 
                 cv2.imshow("tsmark", frame_visu)
                 k = cv2.waitKey(draw_wait)
@@ -377,6 +397,7 @@ class Marker:
                     self.show_info = not self.show_info
                 if k & 0xFF == ord("h"):
                     self.print_help()
+                    self.show_help = not self.show_help
 
                 if (not self.paused) or self.read_next:
                     self.nr += 1
