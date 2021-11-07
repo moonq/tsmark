@@ -195,9 +195,10 @@ class Marker:
     z and c   move to previous or next mark
     x or double click in the video
               mark frame
-    space     pause
+    space or click video
+              pause
     i         toggle HUD
-    q         quit
+    q or esc  quit
     """
 
 
@@ -230,6 +231,8 @@ class Marker:
                 click_relative = (x - self.bar_start) / (self.bar_end - self.bar_start)
                 self.nr = int(click_relative * self.frames)
                 self.read_next = True
+            else:
+                self.paused = not self.paused
 
         if event == cv2.EVENT_LBUTTONDBLCLK:
             if not in_bar:
@@ -341,6 +344,8 @@ class Marker:
                 if self.show_help:
                     self.draw_help(frame_visu)
 
+                if cv2.getWindowProperty('tsmark', cv2.WND_PROP_VISIBLE) < 1:
+                    break
                 cv2.imshow("tsmark", frame_visu)
                 k = cv2.waitKey(draw_wait)
                 if k & 0xFF == ord("q") or k & 0xFF == 27:
