@@ -2,12 +2,11 @@ import sys
 import os
 import cv2
 import time
-import argparse
 
 
 class Marker:
-    def __init__(self):
-        self.get_options()
+    def __init__(self, opts):
+        self.opts = opts
         if not os.path.exists(self.opts.video):
             raise FileNotFoundError("Video file missing!")
 
@@ -157,7 +156,6 @@ class Marker:
             self.shadow_text(frame, row, (left, bottom), 0.6, 1, (255, 255, 255))
             bottom += 18
 
-
     def draw_label(self, frame):
 
         if not self.nr in self.stamps:
@@ -200,21 +198,6 @@ class Marker:
     i         toggle HUD
     q or esc  quit
     """
-
-
-    def get_options(self):
-
-        parser = argparse.ArgumentParser(description="Video timestamping tool")
-        parser.add_argument(
-            "--ts",
-            action="store",
-            dest="timestamps",
-            default=None,
-            required=False,
-            help="Comma separated list of predefined timestamps, in frame numbers, or HH:MM:SS.FF",
-        )
-        parser.add_argument(action="store", dest="video")
-        self.opts = parser.parse_args()
 
     def mouse_click(self, event, x, y, flags, param):
 
@@ -260,7 +243,11 @@ class Marker:
     def parse_timestamps(self):
         if self.opts.timestamps:
             self.stamps = sorted(
-                [self.parse_time(ts.strip()) for ts in self.opts.timestamps.split(",")]
+                [
+                    self.parse_time(ts.strip())
+                    for ts in self.opts.timestamps.split(",")
+                    if ts.strip() != ""
+                ]
             )
             self.stamps = [x for x in self.stamps if 0 <= x < self.frames]
             self.nr = self.stamps[0]
@@ -284,6 +271,14 @@ class Marker:
                     self.format_time(self.stamps[-1]),
                 )
             )
+
+    def save_timestamps(self):
+
+        if self.opts.output == None:
+            return
+        with open(self.opts.output, "wt") as fp:
+            for i, ts in enumerate(self.stamps):
+                fp.write("{},{},{}\n".format(self.format_time(ts), i + 1, ts + 1))
 
     def shadow_text(self, frame, text, pos, size, thicc, color):
 
@@ -344,7 +339,7 @@ class Marker:
                 if self.show_help:
                     self.draw_help(frame_visu)
 
-                if cv2.getWindowProperty('tsmark', cv2.WND_PROP_VISIBLE) < 1:
+                if cv2.getWindowProperty("tsmark", cv2.WND_PROP_VISIBLE) < 1:
                     break
                 cv2.imshow("tsmark", frame_visu)
                 k = cv2.waitKey(draw_wait)
@@ -426,7 +421,4 @@ class Marker:
 
         self.video_reader.release()
         self.print_timestamps()
-
-
-def main():
-    mark = Marker()
+        self.save_timestamps()
