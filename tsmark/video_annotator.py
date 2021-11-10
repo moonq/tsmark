@@ -185,17 +185,17 @@ class Marker:
 
     def get_help(self):
         return """Keyboard help:
-    (Note: after mouse click, arrows stop working due to unknown bug: use j,k)
-    Arrows left and right, Home, End or click mouse in position bar
-    j and k
-              jump in video. Tap frequently to increase time step
+    (Note: after mouse click, arrows stop working due to unknown bug: use j,l,i,k)
+    Arrows, PgUp, PgDn, Home, End or click mouse in position bar
+    j,l,i,k,[,]
+              jump in video position
     , and .   move one frame at a time
     z and c   move to previous or next mark
     x or double click in the video
               mark frame
     space or click video
               pause
-    i         toggle HUD
+    v         toggle HUD
     q or esc  quit
     """
 
@@ -313,6 +313,9 @@ class Marker:
     def loop(self):
 
         self.step = 1
+        self.bigstep = 30
+        self.hugestep = 300
+        self.auto_step = False
         self.last_move = []
         self.video_reader.set(cv2.CAP_PROP_POS_FRAMES, self.nr)
 
@@ -348,6 +351,7 @@ class Marker:
                 if k & 0xFF == 32:  # space
                     self.paused = not self.paused
 
+                # Movement =================
                 if k & 0xFF == 80:  # home key
                     self.nr = -1
                     self.read_next = True
@@ -357,20 +361,40 @@ class Marker:
                     self.paused = True
                     self.read_next = True
 
-                if k & 0xFF == 83 or k & 0xFF == ord("k"):  # right arrow
+                if k & 0xFF == 85 or k & 0xFF == ord("]"):  # pg up
+                    self.nr = int((nr_time + self.hugestep) * self.fps) - 1
+                    self.read_next = True
+                if k & 0xFF == 86 or k & 0xFF == ord("["):  # pg down
+                    self.nr = int((nr_time - self.hugestep) * self.fps) - 1
+                    self.read_next = True
+
+
+                if k & 0xFF == 82 or k & 0xFF == ord("i"):  # up arrow
+                    self.nr = int((nr_time + self.bigstep) * self.fps) - 1
+                    self.read_next = True
+                if k & 0xFF == 84 or k & 0xFF == ord("k"):  # down arrow
+                    self.nr = int((nr_time - self.bigstep) * self.fps) - 1
+                    self.read_next = True
+
+
+                if k & 0xFF == 83 or k & 0xFF == ord("l"):  # right arrow
                     self.last_move.append(("r", time.time()))
                     if self.auto_step:
                         self.calculate_step()
                     self.nr = int((nr_time + self.step) * self.fps) - 1
                     self.read_next = True
-                if k & 0xFF == ord("."):
-                    self.paused = True
-                    self.read_next = True
+
                 if k & 0xFF == 81 or k & 0xFF == ord("j"):  # left arrow
                     self.last_move.append(("l", time.time()))
                     if self.auto_step:
                         self.calculate_step()
                     self.nr = int((nr_time - self.step) * self.fps) - 1
+                    self.read_next = True
+
+
+                # Move by frame
+                if k & 0xFF == ord("."):
+                    self.paused = True
                     self.read_next = True
                 if k & 0xFF == ord(","):
                     self.paused = True
@@ -390,14 +414,17 @@ class Marker:
                             self.read_next = True
                             break
 
+                # Toggling =================
+
                 if k & 0xFF == ord("x"):  # toggle ts
                     self.toggle_stamp()
 
-                if k & 0xFF == ord("i"):
+                if k & 0xFF == ord("v"):
                     self.show_info = not self.show_info
                 if k & 0xFF == ord("h"):
                     self.print_help()
                     self.show_help = not self.show_help
+
 
                 if (not self.paused) or self.read_next:
                     self.nr += 1
