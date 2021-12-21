@@ -22,5 +22,5 @@ setup(
             "tsmark=tsmark:main",
         ],
     },
-    install_requires=["opencv-python==4.5.3.56"],
+    install_requires=["opencv-python>=4.5.0"],
 )
