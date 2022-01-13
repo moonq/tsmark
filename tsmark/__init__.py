@@ -1,7 +1,7 @@
 from tsmark.video_annotator import Marker
 import argparse
 
-VERSION = "0.4.1"
+VERSION = "0.4.2"
 
 
 def get_options():
