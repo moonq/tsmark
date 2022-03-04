@@ -265,11 +265,11 @@ class Marker:
             print("# {}: {} / {}".format(i + 1, self.format_time(ts), ts + 1))
         if len(self.stamps) > 0:
             print(
-                "ffmpeg -i '{}' -ss {} -to {} -c copy '{}.trimmed.mp4'".format(
-                    self.opts.video,
+                'ffmpeg -i "{}" -ss {} -to {} -c copy "{}.trimmed.mp4"'.format(
+                    self.opts.video.replace('"','\\"'),
                     self.format_time(self.stamps[0]),
                     self.format_time(self.stamps[-1]),
-                    self.opts.video,
+                    self.opts.video.replace('"','\\"'),
                 )
             )
 
