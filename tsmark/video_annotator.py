@@ -19,6 +19,7 @@ class Marker:
         self.frame_visu = []
         self.max_res = (1280, 720)
         self.min_res = (512, None)
+        self.forced_fps = opts.fps
 
         try:
             self.open()
@@ -37,6 +38,8 @@ class Marker:
         self.frames = int(self.video_reader.get(cv2.CAP_PROP_FRAME_COUNT))
         self.fps = self.video_reader.get(cv2.CAP_PROP_FPS)
         self.spf = 1 / self.fps
+        self.viewer_fps = self.forced_fps if self.forced_fps else self.fps
+        self.viewer_spf = 1 / self.viewer_fps
         self.video_length = self.frames * self.fps
 
     def calculate_res(self):
@@ -118,7 +121,6 @@ class Marker:
                 (84, 255, 63),
                 1,
             )
-        # cv2.line(frame, (bar_position, top), (bar_position, bottom), (32,32,32), 3)
         cv2.line(
             frame,
             (bar_position, self.bar_top),
@@ -437,7 +439,7 @@ class Marker:
                 if self.read_next:
                     self.video_reader.set(cv2.CAP_PROP_POS_FRAMES, self.nr)
 
-                time_to_wait = self.spf - time.time() + show_time
+                time_to_wait = self.viewer_spf - time.time() + show_time
                 if time_to_wait > 0:
                     time.sleep(time_to_wait)
 

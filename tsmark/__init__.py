@@ -1,7 +1,7 @@
 from tsmark.video_annotator import Marker
 import argparse
 
-VERSION = "0.4.3"
+VERSION = "0.4.4"
 
 
 def get_options():
@@ -22,6 +22,15 @@ def get_options():
         default=None,
         required=False,
         help="Save timestamps to a CSV file",
+    )
+    parser.add_argument(
+        "--fps",
+        action="store",
+        dest="fps",
+        default=None,
+        required=False,
+        type=float,
+        help="Force FPS to play video",
     )
     parser.add_argument("--version", action="version", version=VERSION)
     parser.add_argument(action="store", dest="video")
