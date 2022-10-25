@@ -189,15 +189,18 @@ class Marker:
         return """Keyboard help:
     (Note: after mouse click, arrows stop working due to unknown bug: use j,l,i,k)
     Arrows, PgUp, PgDn, Home, End or click mouse in position bar
-    j,l,i,k,[,]
+    j l i k [ ]
               jump in video position
+    0-9       move to 0%,10%,20% .. position
     , and .   move one frame at a time
     z and c   move to previous or next mark
     x or double click in the video
               mark frame
     space or click video
               pause
+    f         toggle 0.5x 1x or 2x FPS
     v         toggle HUD
+    h         toggle help
     q or esc  quit
     """
 
@@ -268,10 +271,10 @@ class Marker:
         if len(self.stamps) > 0:
             print(
                 'ffmpeg -i "{}" -ss {} -to {} -c copy "{}.trimmed.mp4"'.format(
-                    self.opts.video.replace('"','\\"'),
+                    self.opts.video.replace('"', '\\"'),
                     self.format_time(self.stamps[0]),
                     self.format_time(self.stamps[-1]),
-                    self.opts.video.replace('"','\\"'),
+                    self.opts.video.replace('"', '\\"'),
                 )
             )
 
@@ -325,6 +328,9 @@ class Marker:
         self.print_help()
         cv2.namedWindow("tsmark")
         cv2.setMouseCallback("tsmark", self.mouse_click)
+        digits_ords = [ord(str(x)) for x in range(10)]
+        FPS_modifier = 1
+        FPS_modifiers = [0.5, 1, 2]
         while self.video_reader.isOpened():
             show_time = time.time()
             if (not self.paused) or self.read_next:
@@ -351,83 +357,87 @@ class Marker:
                 k = cv2.waitKey(draw_wait)
                 if k & 0xFF == ord("q") or k & 0xFF == 27:
                     break
-                if k & 0xFF == 32:  # space
+                elif k & 0xFF == 32:  # space
                     self.paused = not self.paused
 
                 # Movement =================
-                if k & 0xFF == 80:  # home key
+                elif k & 0xFF == 80:  # home key
                     self.nr = -1
                     self.read_next = True
 
-                if k & 0xFF == 87:  # end key
+                elif k & 0xFF == 87:  # end key
                     self.nr = self.frames - 1
                     self.paused = True
                     self.read_next = True
 
-                if k & 0xFF == 85 or k & 0xFF == ord("]"):  # pg up
+                elif k & 0xFF == 85 or k & 0xFF == ord("]"):  # pg up
                     self.nr = int((nr_time + self.hugestep) * self.fps) - 1
                     self.read_next = True
-                if k & 0xFF == 86 or k & 0xFF == ord("["):  # pg down
+                elif k & 0xFF == 86 or k & 0xFF == ord("["):  # pg down
                     self.nr = int((nr_time - self.hugestep) * self.fps) - 1
                     self.read_next = True
 
-
-                if k & 0xFF == 82 or k & 0xFF == ord("i"):  # up arrow
+                elif k & 0xFF == 82 or k & 0xFF == ord("i"):  # up arrow
                     self.nr = int((nr_time + self.bigstep) * self.fps) - 1
                     self.read_next = True
-                if k & 0xFF == 84 or k & 0xFF == ord("k"):  # down arrow
+                elif k & 0xFF == 84 or k & 0xFF == ord("k"):  # down arrow
                     self.nr = int((nr_time - self.bigstep) * self.fps) - 1
                     self.read_next = True
 
-
-                if k & 0xFF == 83 or k & 0xFF == ord("l"):  # right arrow
+                elif k & 0xFF == 83 or k & 0xFF == ord("l"):  # right arrow
                     self.last_move.append(("r", time.time()))
                     if self.auto_step:
                         self.calculate_step()
                     self.nr = int((nr_time + self.step) * self.fps) - 1
                     self.read_next = True
 
-                if k & 0xFF == 81 or k & 0xFF == ord("j"):  # left arrow
+                elif k & 0xFF == 81 or k & 0xFF == ord("j"):  # left arrow
                     self.last_move.append(("l", time.time()))
                     if self.auto_step:
                         self.calculate_step()
                     self.nr = int((nr_time - self.step) * self.fps) - 1
                     self.read_next = True
 
-
                 # Move by frame
-                if k & 0xFF == ord("."):
+                elif k & 0xFF == ord("."):
                     self.paused = True
                     self.read_next = True
-                if k & 0xFF == ord(","):
+                elif k & 0xFF == ord(","):
                     self.paused = True
                     self.nr -= 2
                     self.read_next = True
 
-                if k & 0xFF == ord("z"):  # move to previous ts
+                elif k & 0xFF == ord("z"):  # move to previous ts
                     for ts in reversed(sorted(self.stamps)):
                         if ts < self.nr - 1:
                             self.nr = ts - 1
                             self.read_next = True
                             break
-                if k & 0xFF == ord("c"):  # move to previous ts
+                elif k & 0xFF == ord("c"):  # move to previous ts
                     for ts in sorted(self.stamps):
                         if ts > self.nr:
                             self.nr = ts - 1
                             self.read_next = True
                             break
 
+                # Move by number
+                elif k & 0xFF in digits_ords:
+                    self.nr = int(digits_ords.index(k & 0xFF) * self.frames / 10) - 1
+                    self.read_next = True
+
                 # Toggling =================
 
-                if k & 0xFF == ord("x"):  # toggle ts
+                elif k & 0xFF == ord("f"):  # modify FPS
+                    FPS_modifier = (FPS_modifier + 1) % len(FPS_modifiers)
+
+                elif k & 0xFF == ord("x"):  # toggle ts
                     self.toggle_stamp()
 
-                if k & 0xFF == ord("v"):
+                elif k & 0xFF == ord("v"):
                     self.show_info = not self.show_info
-                if k & 0xFF == ord("h"):
+                elif k & 0xFF == ord("h"):
                     self.print_help()
                     self.show_help = not self.show_help
-
 
                 if (not self.paused) or self.read_next:
                     self.nr += 1
@@ -439,7 +449,11 @@ class Marker:
                 if self.read_next:
                     self.video_reader.set(cv2.CAP_PROP_POS_FRAMES, self.nr)
 
-                time_to_wait = self.viewer_spf - time.time() + show_time
+                time_to_wait = (
+                    FPS_modifiers[FPS_modifier] * self.viewer_spf
+                    - time.time()
+                    + show_time
+                )
                 if time_to_wait > 0:
                     time.sleep(time_to_wait)
 
