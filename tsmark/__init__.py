@@ -1,7 +1,7 @@
 from tsmark.video_annotator import Marker
 import argparse
 
-VERSION = "0.4.5"
+VERSION = "0.4.6"
 
 
 def get_options():
@@ -13,7 +13,7 @@ def get_options():
         dest="timestamps",
         default=None,
         required=False,
-        help="Comma separated list of predefined timestamps, in seconds, or HH:MM:SS.ss. You can use the -o output file as input via --ts $( cut -d, -f1 ts.csv | xargs printf '%%s,' )",
+        help="Comma separated list of predefined timestamps, in seconds, or HH:MM:SS.ss, or input CSV file. You can use the -o output file as input via --ts $( cut -d, -f1 ts.csv | xargs printf '%%s,' )",
     )
     parser.add_argument(
         "-o",

@@ -247,10 +247,17 @@ class Marker:
 
     def parse_timestamps(self):
         if self.opts.timestamps:
+            if os.path.exists(self.opts.timestamps):
+                with open(self.opts.timestamps,'rt') as fp:
+
+                    self.opts.timestamps = [x.split(",")[0] for x in fp.readlines()]
+            else:
+                self.opts.timestamps = self.opts.timestamps.split(",")
+
             self.stamps = sorted(
                 [
                     self.parse_time(ts.strip())
-                    for ts in self.opts.timestamps.split(",")
+                    for ts in self.opts.timestamps
                     if ts.strip() != ""
                 ]
             )
@@ -270,10 +277,10 @@ class Marker:
             print("# {}: {} / {}".format(i + 1, self.format_time(ts), ts + 1))
         if len(self.stamps) > 0:
             print(
-                'ffmpeg -i "{}" -ss {} -to {} -c copy "{}.trimmed.mp4"'.format(
-                    self.opts.video.replace('"', '\\"'),
+                'ffmpeg -ss {} -to {} -i "{}" -c copy "{}.trimmed.mp4"'.format(
                     self.format_time(self.stamps[0]),
                     self.format_time(self.stamps[-1]),
+                    self.opts.video.replace('"', '\\"'),
                     self.opts.video.replace('"', '\\"'),
                 )
             )
