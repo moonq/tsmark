@@ -1,7 +1,8 @@
-import sys
 import os
-import cv2
+import sys
 import time
+
+import cv2
 
 
 class Marker:
@@ -104,9 +105,7 @@ class Marker:
         )
 
         for ts in self.stamps:
-            ts_pos = int(
-                self.bar_start + ts / self.frames * (self.bar_end - self.bar_start)
-            )
+            ts_pos = int(self.bar_start + ts / self.frames * (self.bar_end - self.bar_start))
             cv2.line(
                 frame,
                 (ts_pos, self.bar_top),
@@ -138,9 +137,7 @@ class Marker:
             (255, 255, 255),
         )
         end_frame = self.format_time(self.frames - 1)
-        (text_width, text_height) = cv2.getTextSize(
-            end_frame, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2
-        )[0]
+        (text_width, text_height) = cv2.getTextSize(end_frame, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)[0]
         self.shadow_text(
             frame,
             end_frame,
@@ -163,7 +160,7 @@ class Marker:
         if not self.nr in self.stamps:
             return
 
-        text = "{} #{}".format(self.nr + 1, self.stamps.index(self.nr) + 1)
+        text = "{} #{}".format(self.nr, self.stamps.index(self.nr) + 1)
         bottom = 60
         left = 10
         self.shadow_text(frame, text, (left, bottom), 1, 2, (63, 84, 255))
@@ -242,25 +239,28 @@ class Marker:
         if colon_count == 2:
             hours, mins, secstr = timestr.split(":", 2)
             sec = float(secstr)
-            return int(self.fps * (int(hours) * 3600 + int(mins) * 60 + sec))
+            return int(self.fps * (int(hours) * 3600 + int(mins) * 60 + sec), 0)
         raise ValueError("Cannot parse time definition {}".format(timestr))
 
     def parse_timestamps(self):
+        self.stamps = []
         if self.opts.timestamps:
             if os.path.exists(self.opts.timestamps):
-                with open(self.opts.timestamps,'rt') as fp:
-
-                    self.opts.timestamps = [x.split(",")[0] for x in fp.readlines()]
+                with open(self.opts.timestamps, "rt") as fp:
+                    for row in fp.readlines():
+                        # if row has 3 cols,  pick the frame number directly
+                        splitted = row.split(",")
+                        if len(splitted) == 3:
+                            self.stamps.append(int(splitted[2]))
+                        if len(splitted) < 3:
+                            self.opts.timestamps.append(splitted[0])
             else:
                 self.opts.timestamps = self.opts.timestamps.split(",")
 
-            self.stamps = sorted(
-                [
-                    self.parse_time(ts.strip())
-                    for ts in self.opts.timestamps
-                    if ts.strip() != ""
-                ]
-            )
+            if len(self.stamps) > 0:
+                self.stamps.sort()
+            else:
+                self.stamps = sorted([self.parse_time(ts.strip()) for ts in self.opts.timestamps if ts.strip() != ""])
             self.stamps = [x for x in self.stamps if 0 <= x < self.frames]
             self.nr = self.stamps[0]
         else:
@@ -274,7 +274,7 @@ class Marker:
         self.stamps.sort()
         print("# Timestamps:")
         for i, ts in enumerate(self.stamps):
-            print("# {}: {} / {}".format(i + 1, self.format_time(ts), ts + 1))
+            print("# {}: {} / {}".format(i + 1, self.format_time(ts), ts))
         if len(self.stamps) > 0:
             print(
                 'ffmpeg -ss {} -to {} -i "{}" -c copy "{}.trimmed.mp4"'.format(
@@ -291,7 +291,7 @@ class Marker:
             return
         with open(self.opts.output, "wt") as fp:
             for i, ts in enumerate(self.stamps):
-                fp.write("{},{},{}\n".format(self.format_time(ts), i + 1, ts + 1))
+                fp.write("{},{},{}\n".format(self.format_time(ts), i + 1, ts))
 
     def shadow_text(self, frame, text, pos, size, thicc, color):
 
@@ -456,11 +456,7 @@ class Marker:
                 if self.read_next:
                     self.video_reader.set(cv2.CAP_PROP_POS_FRAMES, self.nr)
 
-                time_to_wait = (
-                    FPS_modifiers[FPS_modifier] * self.viewer_spf
-                    - time.time()
-                    + show_time
-                )
+                time_to_wait = FPS_modifiers[FPS_modifier] * self.viewer_spf - time.time() + show_time
                 if time_to_wait > 0:
                     time.sleep(time_to_wait)
 
